@@ -9,8 +9,50 @@
 #include "http.h"
 #include <arpa/inet.h>
 #include <sys/fcntl.h>
+#include <errno.h>
+
 
 #define MAXSIZE 2048
+
+void do_read(int cfd,int epfd)
+{
+    //读取一行http协议，拆分get文件名和协议号
+    char line[1024]={0};
+    int len=get_line(cfd,line,sizeof(line));
+    if(len==0)
+    {
+        printf("服务器检查到客户端关闭\n");
+        disconnect(cfd,epfd);
+    }
+    else
+    {
+        char method[16],path[256],protocol[16];
+        sscanf(line, "%[^ ] %[^ ] %[^ ]",method,path,protocol);
+
+        printf("method =%s,path=%s,protocol=%s\n",method,path,protocol);
+
+        while(1)
+        {
+            char buf[1024]={0};
+            len=get_line(cfd,buf,sizeof(buf));
+            if(len== '\n')
+                break;
+
+            //printf("----len = %d , %s",len,buf);
+
+            else if(len==-1)
+            {
+                break;
+            }
+        }
+        if(strncasecmp(method,"get",3)==0)
+        {
+            char *file=path+1; //取出 客户端要访问的文件名
+            http_request(cfd,file);
+        }
+    }
+}
+
 
 void epoll_run(int port)
 {
@@ -142,6 +184,120 @@ void send_respond(int cfd,int num,char* discription,char* type,int len)
     send(cfd,"\r\n",2,0);
     
 }
+
+void send_file(int cfd,const char* file)
+{
+    char buf[4096]={0};
+    int n=0,ret;
+
+    int fd=open(file,O_RDONLY);
+    if(fd<0)
+    {
+        //404错误
+
+        perror("open error");
+        exit(1);
+    }
+    while( (n =read(fd,buf,sizeof(buf))) >0)
+    {
+        
+        //printf("----------n:%d\n",n);
+        ret=send(cfd,buf,n,0);
+        if(ret==-1)
+        {
+            //perror("send error");
+            //exit(1);
+            printf("errno = %d\n",errno);
+            if(errno==EAGAIN)
+            {
+                printf("--------EAGAIN\n");
+                continue;
+            }
+            else if(errno==EINTR)
+            {
+                printf("-------EINTR\n");
+                continue;
+            }
+            else
+            {
+                perror("send error");
+                exit(1);
+            }
+        }
+        if(ret<4096)
+            printf("----------send ret:%d\n",ret);
+    }
+
+    close(fd);
+}
+void send_error(int cfd,int status,char* title,char* text)
+{
+    char buf[1024]={0};
+
+    sprintf(buf,"%s %d %s\r\n","HTTP/1.1",status,title);
+    sprintf(buf+strlen(buf),"Content-Type:%s\r\n","text/html");
+    sprintf(buf+strlen(buf),"Content-Length:%d\r\n",-1);
+    sprintf(buf+strlen(buf),"Content:close\r\n");
+
+    send(cfd,buf,strlen(buf),0);
+    send(cfd,"\r\n",2,0);
+
+    memset(buf,0,sizeof(buf));
+    sprintf(buf,"<html><head><title>%d %s</title></head>\n",status,title);
+    sprintf(buf+strlen(buf),"<body bgcolor=\"#cc99cc\"><h2 align=\"center\"%d %s</h4>\n",status,title);
+    sprintf(buf+strlen(buf),"%s\n",text);
+    sprintf(buf+strlen(buf),"<hr>\n</body>\n</html>\n");
+    send(cfd,buf,strlen(buf),0);
+}
+const char* get_file_type(const char* name)
+{
+    char *dot;
+
+    dot=strrchr(name,'.');
+
+    if(dot==NULL)
+        return "text/plain; charset=utf-8";
+    if(strcmp(dot,".html")==0 || strcmp(dot,".htm")==0)
+        return "text/html; charset=utf-8";
+    
+    if(strcmp(dot,".jpg")==0 || strcmp(dot,".jpeg")==0)
+        return "image/jpeg";
+    if(strcmp(dot,".gif")==0)
+        return "image/gif";
+    if(strcmp(dot,".png")==0)
+        return "image/png";
+    
+    if(strcmp(dot,".css")==0)
+        return "text/css";
+
+    if(strcmp(dot,".au")==0)
+        return "audio/basic";
+    if(strcmp(dot,".wav")==0)
+        return "audio/wav";
+
+    if(strcmp(dot,".avi")==0)
+        return "video/x-msvideo";
+    if(strcmp(dot,".mov")==0 || strcmp(dot,".qt")==0)
+        return "video/quicktime";
+    if(strcmp(dot,".mpeg")==0 || strcmp(dot,".mpe")==0)
+        return "video/mpeg";
+    if(strcmp(dot,".vrml")==0 || strcmp(dot,".wrl")==0)
+        return "model/vrml";
+    
+    if(strcmp(dot,".midi")==0 || strcmp(dot,".mid")==0)
+        return "audio/midi";
+    if(strcmp(dot,".mp3")==0)
+        return "audio/mpeg";
+
+    if(strcmp(dot,".ogg")==0)
+        return "application/ogg";
+    if(strcmp(dot,".pac")==0)
+        return "application/x-ns-proxy-autoconfig";
+
+    return "text/plain; charset=utf-8";
+}
+
+
 //判断文件是否存在
 void http_request(int cfd,const char* file)
 {
@@ -152,8 +308,8 @@ void http_request(int cfd,const char* file)
     if(ret!=0)
     {
         //回发浏览器错误页面
-        perror("stat error");
-        exit(1);
+        send_error(cfd,404,"Not Found","No such file or direntry");
+        return ;
     }
 
     if(S_ISREG(sbuf.st_mode) ) //一个普通文件
@@ -162,47 +318,11 @@ void http_request(int cfd,const char* file)
         //回发http应答
         send_respond(cfd,200,"OK", "Content-Type: text/plain; charset=iso-8859-1",sbuf.st_size);
         //回发给客户端请求数据内容,
+        send_file(cfd,file);
     }
 }
 
-void do_read(int cfd,int epfd)
-{
-    //读取一行http协议，拆分get文件名和协议号
-    char line[1024]={0};
-    int len=get_line(cfd,line,sizeof(line));
-    if(len==0)
-    {
-        printf("服务器检查到客户端关闭\n");
-        disconnect(cfd,epfd);
-    }
-    else
-    {
-        char method[16],path[256],protocol[16];
-        sscanf(line, "%[^ ] %[^ ] %[^ ]",method,path,protocol);
 
-        printf("method =%s,path=%s,protocol=%s\n",method,path,protocol);
-
-        while(1)
-        {
-            char buf[1024]={0};
-            len=get_line(cfd,buf,sizeof(buf));
-            if(len== '\n')
-                break;
-
-            //printf("----len = %d , %s",len,buf);
-
-            else if(len==-1)
-            {
-                break;
-            }
-        }
-        if(strncasecmp(method,"get",3)==0)
-        {
-            char *file=path+1; //取出 客户端要访问的文件名
-            http_request(cfd,file);
-        }
-    }
-}
 int get_line(int cfd,char* buf,int size)
 {
     int i=0;
