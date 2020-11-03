@@ -10,6 +10,7 @@
 #include <arpa/inet.h>
 #include <sys/fcntl.h>
 #include <errno.h>
+#include <dirent.h>
 
 
 #define MAXSIZE 2048
@@ -171,12 +172,71 @@ void disconnect(int cfd,int epfd)
     close(cfd);
 }
 
+void send_dir(int cfd,char* dirname)
+{
+    int i,ret;
+    char buf[1024]={0};
+    sprintf(buf,"<html><head><title>目录名:%s</title></head>",dirname);
+    sprintf(buf+strlen(buf),"<body><h1>当前目录:%s</h1><table>",dirname);
 
+    char enstr[1024]={0};
+    char path[1024]={0};
+
+    struct dirent **ptr;
+    int num=scandir(dirname,&ptr,NULL,alphasort);
+    for(int j=0;j<num;j++)
+    {
+        char* name=ptr[j]->d_name;
+        sprintf(path,"%s%s",dirname,name);
+        printf("path=%s\n",path);
+
+        struct stat st;
+        stat(path,&st);
+
+        if(S_ISREG(st.st_mode))
+        {
+            sprintf(buf+strlen(buf),"<tr><td><a href=\"%s\">%s</a></td><td>%ld</td></tr>",enstr,name,(long)st.st_size);
+        }
+        else if(S_ISDIR(st.st_mode))
+        {
+            sprintf(buf+strlen(buf),"<tr><td><a href=\"%s/\">%s</a></td><td>%ld</td></tr>",enstr,name,(long)st.st_size);
+        }
+
+        ret=send(cfd,buf,sizeof(buf),0);
+        if(ret==-1)
+        {
+            printf("errno = %d\n",errno);
+            if(errno==EAGAIN)
+            {
+                printf("--------EAGAIN\n");
+                continue;
+            }
+            else if(errno==EINTR)
+            {
+                printf("-------EINTR\n");
+                continue;
+            }
+            else
+            {
+                perror("send error");
+                return ;
+            }
+        }
+        memset(buf,0,sizeof(buf));
+    }
+    sprintf(buf+strlen(buf),"</table></body></html>");
+    send(cfd,buf,strlen(buf),0);
+
+
+    printf("dir message ok!!!\n");
+}
 //客户端fd，错误号，错误描述，回发文件类型，错误长度
-void send_respond(int cfd,int num,char* discription,char* type,int len)
+void send_respond_head(int cfd,int num,char* discription,char* type,int len)
 {
     char buf[1024]={0};
     sprintf(buf,"HTTP/1.1 %d %s\r\n",num,discription);
+    //send(cfd,buf,sizeof(buf),0);
+
     sprintf(buf+strlen(buf),"%s\r\n",type);
     sprintf(buf+strlen(buf),"Content-Length:%d\r\n",len);
 
@@ -301,6 +361,7 @@ const char* get_file_type(const char* name)
 //判断文件是否存在
 void http_request(int cfd,const char* file)
 {
+
     struct stat sbuf;
 
     int ret=stat(file,&sbuf);
