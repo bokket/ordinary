@@ -11,6 +11,7 @@
 #include <sys/fcntl.h>
 #include <errno.h>
 #include <dirent.h>
+#include <ctype.h>
 
 
 #define MAXSIZE 2048
@@ -27,11 +28,14 @@ void do_read(int cfd,int epfd)
     }
     else
     {
-        char method[16],path[256],protocol[16];
+       /* char method[16],path[256],protocol[16];
         sscanf(line, "%[^ ] %[^ ] %[^ ]",method,path,protocol);
 
         printf("method =%s,path=%s,protocol=%s\n",method,path,protocol);
 
+
+        decode_str(path,path);*/
+        
         while(1)
         {
             char buf[1024]={0};
@@ -46,10 +50,12 @@ void do_read(int cfd,int epfd)
                 break;
             }
         }
-        if(strncasecmp(method,"get",3)==0)
+        //if(strncasecmp(method,"get",3)==0)
+        if(strncasecmp(line,"get",3)==0)
         {
-            char *file=path+1; //取出 客户端要访问的文件名
-            http_request(cfd,file);
+           // char *file=path+1; //取出 客户端要访问的文件名
+            //http_request(cfd,file);
+            http_request(cfd,line);
         }
     }
 }
@@ -175,9 +181,10 @@ void disconnect(int cfd,int epfd)
 void send_dir(int cfd,char* dirname)
 {
     int i,ret;
+
     char buf[1024]={0};
-    sprintf(buf,"<html><head><title>目录名:%s</title></head>",dirname);
-    sprintf(buf+strlen(buf),"<body><h1>当前目录:%s</h1><table>",dirname);
+    sprintf(buf,"<html><head><title>目录名: %s</title></head>",dirname);
+    sprintf(buf+strlen(buf),"<body><h1>当前目录: %s</h1><table>",dirname);
 
     char enstr[1024]={0};
     char path[1024]={0};
@@ -187,19 +194,26 @@ void send_dir(int cfd,char* dirname)
     for(int j=0;j<num;j++)
     {
         char* name=ptr[j]->d_name;
-        sprintf(path,"%s%s",dirname,name);
+
+        sprintf(path,"%s/%s",dirname,name);
         printf("path=%s\n",path);
 
         struct stat st;
         stat(path,&st);
 
+        encode_str(enstr,sizeof(enstr),name);
+
         if(S_ISREG(st.st_mode))
         {
-            sprintf(buf+strlen(buf),"<tr><td><a href=\"%s\">%s</a></td><td>%ld</td></tr>",enstr,name,(long)st.st_size);
+            sprintf(buf+strlen(buf),
+                "<tr><td><a href=\"%s\">%s</a></td><td>%ld</td></tr>",
+                enstr,name,(long)st.st_size);
         }
         else if(S_ISDIR(st.st_mode))
         {
-            sprintf(buf+strlen(buf),"<tr><td><a href=\"%s/\">%s</a></td><td>%ld</td></tr>",enstr,name,(long)st.st_size);
+            sprintf(buf+strlen(buf),
+                "<tr><td><a href=\"%s/\">%s</a></td><td>%ld</td></tr>",
+                enstr,name,(long)st.st_size);
         }
 
         ret=send(cfd,buf,sizeof(buf),0);
@@ -230,6 +244,48 @@ void send_dir(int cfd,char* dirname)
 
     printf("dir message ok!!!\n");
 }
+
+void encode_str(char *to, int tosize, const char *from) 
+{
+    int tolen;
+    for (tolen = 0; *from != '\0' && tolen + 4 < tosize; ++from) {
+        if (isalnum(*from) || strchr("/_.-~", *from) != (char *) 0) {
+            *to = *from;
+            ++to;
+            ++tolen;
+        } else {
+            sprintf(to, "%%%02x", (int) *from & 0xff);
+            to += 3;
+            tolen += 3;
+        }
+    }
+    *to = '\0';
+}
+
+void decode_str(char *to, char *from) 
+{
+    for (; *from != '\0'; ++to, ++from) {
+        if (from[0] == '%' && isxdigit(from[1]) && isxdigit(from[2])) {
+            *to = hexit(from[1]) * 16 + hexit(from[2]);
+            from += 2;
+        } else {
+            *to = *from;
+        }
+    }
+    *to = '\0';
+}
+
+int hexit(char c) 
+{
+    if (c >= '0' && c <= '9')
+        return c - '0';
+    if (c >= 'a' && c <= 'f')
+        return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F')
+        return c - 'A' + 10;
+    return 0;
+}
+
 //客户端fd，错误号，错误描述，回发文件类型，错误长度
 void send_respond_head(int cfd,int num,char* discription,char* type,int len)
 {
@@ -237,7 +293,7 @@ void send_respond_head(int cfd,int num,char* discription,char* type,int len)
     sprintf(buf,"HTTP/1.1 %d %s\r\n",num,discription);
     //send(cfd,buf,sizeof(buf),0);
 
-    sprintf(buf+strlen(buf),"%s\r\n",type);
+    sprintf(buf+strlen(buf),"Content-Type:%s\r\n",type);
     sprintf(buf+strlen(buf),"Content-Length:%d\r\n",len);
 
     send(cfd,buf,strlen(buf),0);
@@ -309,7 +365,7 @@ void send_error(int cfd,int status,char* title,char* text)
     sprintf(buf+strlen(buf),"<hr>\n</body>\n</html>\n");
     send(cfd,buf,strlen(buf),0);
 }
-const char* get_file_type(const char* name)
+char* get_file_type(const char* name)
 {
     char *dot;
 
@@ -359,8 +415,27 @@ const char* get_file_type(const char* name)
 
 
 //判断文件是否存在
-void http_request(int cfd,const char* file)
+//void http_request(int cfd,const char* file)
+void http_request(int cfd,char* line)
 {
+
+    char method[16],path[256],protocol[16];
+    sscanf(line, "%[^ ] %[^ ] %[^ ]",method,path,protocol);
+
+    printf("method =%s,path=%s,protocol=%s\n",method,path,protocol);
+
+
+    decode_str(path,path);
+
+
+    char file[256];
+    if(strcmp(path,"/")==0)
+        strcpy(file,"./");
+    else
+    {
+        strcpy(file,path+1);
+    }
+    
 
     struct stat sbuf;
 
@@ -377,9 +452,15 @@ void http_request(int cfd,const char* file)
     {
         //printf("------------It is a file : %s \n",file);
         //回发http应答
-        send_respond(cfd,200,"OK", "Content-Type: text/plain; charset=iso-8859-1",sbuf.st_size);
+        //send_respond_head(cfd,200,"OK", "Content-Type: text/plain; charset=iso-8859-1",sbuf.st_size);
+        send_respond_head(cfd,200,"OK", get_file_type(file),sbuf.st_size);
         //回发给客户端请求数据内容,
         send_file(cfd,file);
+    }
+    else if(S_ISDIR(sbuf.st_mode))
+    {
+        send_respond_head(cfd,200,"OK",get_file_type(".html"),-1);
+        send_dir(cfd,file);
     }
 }
 
