@@ -1,4 +1,1 @@
-/snap/clion/126/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /home/bokket/LinuxLearn
--- Configuring done
--- Generating done
--- Build files have been written to: /home/bokket/LinuxLearn/cmake-build-debug
+CMakeLists.txt not found in /home/bokket/ordinary/LinuxLearn 选择 CMakeLists.txt 文件…
