@@ -1,4 +1,5 @@
 import java.util.*;
+/*
 public class remove
 {
     public static void main(String[] args)
@@ -41,4 +42,4 @@ public class remove
         for(i=0;i<cnt;i++)
             System.out.print(b[i]+" ");
     }
-}
+}*/

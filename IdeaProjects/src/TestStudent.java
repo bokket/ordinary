@@ -1,6 +1,6 @@
 import javax.security.auth.Subject;
 import java.util.*;
-class Student {
+/*class Student {
     String name;
     int age;
     String study;
@@ -139,4 +139,4 @@ public class TestStudent
         System.out.println("  postgraduate age is "+stu2.getAge());
         System.out.println("  postgraduate direction is "+stu2.getStudydirection());
     }
-}
+}*/
