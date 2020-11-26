@@ -11,15 +11,76 @@ interface IntegerStack
     public int size();      //返回栈中元素个数
 }
 
-public class ArrayIntegerStack1 implements Integer
+class ArrayIntegerStack1 implements IntegerStack
 {
-    private char[] a;
-    ArrayIntegerStack1()
+    Integer a[];
+    int size=0;
+    ArrayIntegerStack1(int n)
+    {
+        a=new Integer[n];
+    }
+    public Integer push(Integer item)
+    {
+        if(item==null)
+            return null;
+        if(size==a.length)
+            return null;
+        a[size]=item;
+        size++;
+        return item;
+    }
+    public Integer pop();   //出栈，如果为空，则返回null。出栈时只移动栈顶指针，相应位置不置为null
+    {
+        if(!empty())
+            return null;
+        size--;
+        return a[size];
+    }
+    public Integer peek();  //获得栈顶元素，如果为空，则返回null.
+    {
+        if(!empty())
+            return null;
+        return a[size-1];
+    }
+    public boolean empty(); //如果为空返回true
+    {
+        if(size==0)
+            return false;
+        else
+            return true;
+    }
+    public int size();      //返回栈中元素个数
+    {
+        return size;
+    }
+    public String toString()
+    {
+        return Array.toString(a);
+    }
 }
 public class ArrayIntegerStack
 {
     public static void main(String[] args)
     {
+        Scanner input=new Scanner(System.in);
+        int n;
+        n=input.nextInt();
+        ArrayIntegerStack1 A=new ArrayIntegerStack1(n);
+        int m;
+        for(int i=0;i<m;i++)
+            System.out.println(A.push(input.nextInt()));
 
+
+        System.out.println(A.peek()+","+A.empty()+","+A.size());
+        String s=A.toString();
+        System.out.println(A.toString());
+        int cnt=input.nextInt();
+
+        for(int i=0;i<cnt;i++)
+        {
+            System.out.println(A.pop());
+        }
+        System.out.println(A.peek()+","+A.empty()+","+A.size());
+        System.out.println(s);
     }
 }
