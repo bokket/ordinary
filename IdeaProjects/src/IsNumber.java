@@ -9,18 +9,23 @@ public class IsNumber
 
         String s = input.next();
 
-
-        int cnt=1;
-        for(int i= s.length()-1;i>=0;i--)
+        boolean flag=false;
+        int cnt=0;
+        for(int i=0;i<s.length()-1;i++)
         {
-            if(!Character.isDigit(s.charAt(i)));
+            if(s.charAt(i)=='.')
             {
-                cnt = 0;
+                flag=true;
+                cnt++;
+            }
+            if(Character.isDigit(s.charAt(i)));
+            {
+                flag=true;
             }
         }
-        if(cnt==0)
-            System.out.println("false");
-        if(cnt==1)
+        if(flag && cnt==1)
             System.out.println("true");
+        else
+            System.out.println("false");
     }
 }
