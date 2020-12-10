@@ -1,6 +1,39 @@
 import java.util.*;
 public class number
 {
+    public static void main(String[] args)
+    {
+        Scanner input=new Scanner(System.in);
+
+        String str=input.nextLine();
+
+        int cntLetter=0;
+        int cntNumber=0;
+        int cntSpace=0;
+        int cntOther=0;
+
+        for(int i=0;i<str.length();i++)
+        {
+            char t=str.charAt(i);
+            if((t>='A' && t<='Z') || (t>='a' && t<='z') )
+                ++cntLetter;
+            else if(t==' ')
+                ++cntSpace;
+            else if(t>='0' && t<='9')
+                ++cntNumber;
+            else
+                ++cntOther;
+        }
+        System.out.println("输入的字母个数："+cntLetter);
+        System.out.println("输入的数字个数："+cntNumber);
+        System.out.println("输入的空格个数："+cntSpace);
+        System.out.println("输入的其他字符个数："+cntOther);
+    }
+}
+
+/*
+public class number
+{
     static void cout(String s)
     {
         String s1="[\u4e00-\u9fa5]"; //汉字
@@ -47,4 +80,4 @@ public class number
         cout(s);
 
     }
-}
+}*/
