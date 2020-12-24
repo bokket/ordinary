@@ -90,46 +90,53 @@ import javax.swing.JLabel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
-@SuppressWarnings("serial")
-public class login extends JFrame{
-    public static void main(String[] args) {
+public class login extends JFrame
+{
+    public static void main(String[] args)
+    {
         login frm = new login();
         frm.setSize(300, 200);
-        frm.setTitle("密码验证");
-        // 设置颜色，这里使用RGB三颜色
+        frm.setTitle("登录验证");
+
+        // 设置颜色
         Container c = frm.getContentPane();
-        c.setBackground(new Color(200, 200, 255)); // RGB色
+        c.setBackground(new Color(202, 255, 200));
         frm.setLayout(null);
-        // 创建“用户名： ”标签
+        // 用户名
         JLabel L1 = new JLabel("用户名: ");
         L1.setBounds(40, 50, 55, 20);
         frm.setResizable(false);
+
         // 创建文本框
         JTextField t1 = new JTextField(50);
         t1.setBounds(100, 50, 100, 20);
-        // 创建“密码：”标签
+
+        // 密码
         JLabel L2 = new JLabel("密码: ");
         L2.setBounds(40, 80, 55, 20);
-        //　 创建密码文本框,设置密码文本框的回显字符为"*"
+        //回显字符为"*"
         JPasswordField t2 = new JPasswordField(50);
         t2.setEchoChar('*');
         t2.setBounds(100, 80, 100, 20);
-        // 创建“确定”按钮
-        JButton btn = new JButton("确定");
-        // “确定”按钮获取用户名和密码
+
+
+        JButton btn = new JButton("登录");
+        // 获取用户名和密码
         btn.addActionListener((ActionEvent e)->{
             System.out.println(t1.getText());
             System.out.println(t2.getPassword());
         });
         btn.setBounds(40, 110, 80, 30);
-        // 创建“清除”按钮
-        JButton btn2 = new JButton("清除");
-        // “清除”按钮可情况用户名和密码中的文本
+
+        
+        JButton btn2 = new JButton("退出");
+
+
         btn2.addActionListener((ActionEvent e)->{
             t1.setText("");
             t2.setText("");
         });
-        btn2.setBounds(130, 110, 80, 30);
+        btn2.setBounds(150, 110, 80, 30);
         // 将组件添加到frm中
         frm.add(t1);
         frm.add(L1);

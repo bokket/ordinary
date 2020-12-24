@@ -7,20 +7,6 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 
-/**
- *
- * (Convert numbers)
- *      Write a program that converts between decimal, hex, and binary numbers,
- *      as shown in Figure 16.37c. When you enter a decimal value in the decimal- value
- *      text field and press the Enter key, its corresponding hex and binary numbers
- *      are displayed in the other two text fields. Likewise, you can enter values in
- *      the other fields andconvertthemaccordingly.(Hint:UsetheInteger.parseInt(s, radix)
- *      method to parse a string to a decimal and use Integer.toHexString(decimal)
- *      and Integer.toBinaryString(decimal) to obtain a hex number or a binary
- *      number from a decimal.)
- *
- * Created by luizsa on 9/24/14.
- */
 public class invest extends Application {
 
     @Override
@@ -38,11 +24,13 @@ public class invest extends Application {
         Label lblDecimal = new Label("Investment Amount:");
         Label lblHex = new Label("Years:");
         Label lblBinary = new Label("Annual Interest Rate:");
+        //Label lbValue = new Label("Future value");
 
 
         TextField tfDecimal = new TextField();
         TextField tfHex = new TextField();
         TextField tfBinary = new TextField();
+        //TextField tfValue =new TextField();
 
         Integer integer = 0;
 
@@ -52,7 +40,7 @@ public class invest extends Application {
             setVgap(10);
             setPadding(new Insets(10, 10, 10, 10));
 
-            TextField[] textFields = new TextField[3];
+            TextField[] textFields = new TextField[4];
             // row 0
             add(lblDecimal, 0, 0);
             add(tfDecimal, 1, 0);
@@ -66,6 +54,11 @@ public class invest extends Application {
             add(lblBinary, 0, 2);
             add(tfBinary, 1, 2);
             textFields[2] = tfBinary;
+
+
+            add(lblBinary, 0, 2);
+            add(tfBinary, 1, 2);
+          //  textFields[3] = tfValue;
 
             for (int i = 0; i < textFields.length; i++) {
                 textFields[i].setText("0");
@@ -86,20 +79,15 @@ public class invest extends Application {
                 integer = Integer.parseInt(tfBinary.getText(), 2);
                 update();
             });
-
-
         }
 
         private void update() {
             tfDecimal.setText(integer.toString());
             tfHex.setText(Integer.toHexString(integer));
             tfBinary.setText(Integer.toBinaryString(integer));
+            //tfValue.setText(Integer.toBinaryString(integer));
         }
     }
-
-
-
-
     public static void main(String[] args) {
         Application.launch(args);
     }
