@@ -1,7 +1,7 @@
 import java.util.*;
 import java.text.DecimalFormat;
 
-
+/*
 abstract class shape {
     // 抽象类 / 抽象方法 求面积
     public abstract double getArea();
@@ -39,4 +39,4 @@ public class regular
         System.out.println(format.format(r.getArea()));
         System.out.println(format.format(r.getPerimeter()));
     }
-}
+}*/
