@@ -1,3 +1,8 @@
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.Buffer;
 import java.util.*;
 
 class student {
@@ -24,25 +29,29 @@ public class sort_stu {
         ArrayList<student> ar = new ArrayList<student>();
 
         int n=0;
-        while(n<5)
-        {
-            String num=in.nextLine();
-            String name=in.nextLine();
-            float score=in.nextFloat();
+        String num;
+        String name;
+        float score;
+        for(int i=0;i<5;i++) {
+            num = in.next();
+             name = in.next();
+            score = in.nextFloat();
 
-            student s=new student(num,name,score);
+            student s = new student(num, name, score);
             ar.add(s);
-            n++;
         }
+
 
         ar.sort(new Comparator<student>() {
             @Override
             public int compare(student o1, student o2) {
-                return 0;
+                return (int)(o2.score-o1.score);
             }
         });
 
-//        for()
+
+        for(student elem:ar)
+            System.out.println(elem.toString());
 
         /* 请在这里补全代码，使程序完成指定的功能。 */
     }
